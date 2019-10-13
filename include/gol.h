@@ -41,4 +41,14 @@ void init_matrix();
 */
 void print_matrix();
 
+/**
+@brief starts the main program loop
+*/
+void start_gol();
+
+/**
+@brief Readies matrix to be printed in next generation
+*/
+void get_nextgen_matrix();
+
 #endif /*_GOL_HEADER_*/
