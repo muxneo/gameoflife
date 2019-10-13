@@ -13,6 +13,9 @@
 
 #define ROW 8
 #define COL 8
+#define NEIGH_MATRIX_ROW 3
+#define NEIGH_MATRIX_COL 3
+
 
 #define PRINTTAB printf("    ");
 
@@ -24,6 +27,14 @@
   }
 
 #define PRINTBLANKLINE printf("\n");
+
+
+
+#define LEFTBOUND(x) (x == -1)
+#define TOPBOUND(x) (x == -1)
+#define RIGHTBOUND(x) (x >= COL)
+#define BOTTOMBOUND(x) (x >= ROW)
+  
 
 
 /**
@@ -50,5 +61,10 @@ void start_gol();
 @brief Readies matrix to be printed in next generation
 */
 void get_nextgen_matrix();
+
+/**
+@brief Calculates the cell value for next gen based on GOL neighbor values
+*/
+int get_nextgen_cell(int i, int j);
 
 #endif /*_GOL_HEADER_*/

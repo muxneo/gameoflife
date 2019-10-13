@@ -46,12 +46,39 @@ void init(){
 }
 
 
+int get_nextgen_cell(int i, int j){
+  int off_neighbors = 0;
+  int on_neighbors = 0;
+  
+  int i_neigh = 0 , j_neigh = 0; /* neighbor indexes */
+  int i_neigh_start = i-1;
+  int j_neigh_start = j-1;
+  
+  for(i_neigh=i_neigh_start ; i_neigh<i_neigh_start+3 ; i_neigh++){
+    for(j_neigh=j_neigh_start ; j_neigh<j_neigh_start+3 ; j_neigh++){
+      if(LEFTBOUND(j_neigh) || TOPBOUND(i_neigh) || RIGHTBOUND(j_neigh) || BOTTOMBOUND(i_neigh)) /* if index out of bounds */
+        continue;
+
+      if((i_neigh == i) && (j_neigh == j)) /* discard current cell */
+        continue;
+
+      if(matrix[i_neigh][j_neigh])
+        on_neighbors++;
+      else
+        off_neighbors++;
+
+    }   
+  }
+
+  return 0;
+}
+
 void get_nextgen_matrix(){
   int i = 0, j = 0;
 
   for(i=0 ; i<ROW; i++){
     for(j=0; j<COL; j++){
-      
+      temp_matrix[i][j] = get_nextgen_cell(i,j);
     }
   }
   
