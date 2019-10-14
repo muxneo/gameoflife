@@ -10,17 +10,22 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h> /* srand, rand */
+#include <stdbool.h> /* gets bool */
 
 #define ROW 8
 #define COL 8
 #define NEIGH_MATRIX_ROW 3
 #define NEIGH_MATRIX_COL 3
+#define ON 1
+#define OFF 0
 
+
+typedef int (*mat_ptr2d)[COL];
 
 #define PRINTTAB printf("    ");
 
 #define PRINTCELL(i,j) {\
-  if(matrix[i][j] == 0)\
+  if(matrix_ptr[i][j] == OFF)\
     printf(". ");\
   else\
     printf("x ");\
@@ -65,6 +70,16 @@ void get_nextgen_matrix();
 /**
 @brief Calculates the cell value for next gen based on GOL neighbor values
 */
-int get_nextgen_cell(int i, int j);
+int get_nextgen_cell(int i, int j, bool mystate);
+
+/**
+@brief business logic / rules for GOL
+*/
+int apply_gol_rules(int on_neighbors, bool mystate);
+
+/**
+@brief Swapping matrix/arrays to avoid copy
+*/
+void swap_matrix(mat_ptr2d *matrix, mat_ptr2d *temp_matrix);
 
 #endif /*_GOL_HEADER_*/
