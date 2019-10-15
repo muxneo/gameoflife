@@ -4,8 +4,8 @@
  * @brief Game Of Life client-server header file
  */
 
-#ifndef _GOL_SERVER_HEADER_
-#define _GOL_SERVER_HEADER_
+#ifndef _GOL_CLIENTSERVER_HEADER_
+#define _GOL_CLIENTSERVER_HEADER_
 
 #include <stdio.h>
 #include <string.h>
@@ -20,10 +20,31 @@
 
 #define GOLSOCKET "/tmp/golsocket"
 #define COMMANDSIZE 20
+#define MATRIXSIZE 256
 
 /* Shared data between client threads - start */
 int gen = 0;
-/* Shared data with thread - end   */
+int client_sockfd;
+/* Shared data between client threads - end   */
+
+
+/* Shared data between server threads - start */
+char clncomm[COMMANDSIZE];
+pthread_mutex_t clncomm_mutex = PTHREAD_MUTEX_INITIALIZER;
+int client_sockfd_srv;
+/* Shared data between server threads - end   */
+
+
+/**
+@brief send_to_client send data back to client 
+*/
+void send_to_client();
+
+/**
+@brief calc_matrix calculate matrix to send back to client
+*/
+void calc_matrix(const char* command);
+
 
 /**
 @brief send_command_srv sends command entered by user to server
@@ -73,4 +94,4 @@ int connect_to_client();
 */
 void read_client_command(int client_sockfd_srv, char* command);
 
-#endif /*_GOL_SERVER_HEADER_*/
+#endif /*_GOL_CLIENTSERVER_HEADER_*/

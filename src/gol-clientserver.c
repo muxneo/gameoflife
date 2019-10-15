@@ -5,6 +5,9 @@
  */
 
 #include "gol-clientserver.h"
+#include "gol-clientserver-matrix.h"
+
+extern int matrix_srv[ROW][COL];
 
 
 void print_help(){
@@ -40,9 +43,49 @@ int connect_to_server(){
   return client_sock_fd;
 }
 
+void print_matrix_client(int** rcvd_matrix){
+  int i,j;
+
+  PRINTBLANKLINE;
+  
+  for(i=0 ; i<ROW ; i++){
+    PRINTTAB;
+    for(j=0 ; j<COL ; j++){
+      if(rcvd_matrix[i][j] == OFF)
+        printf(". ");
+      else
+        printf("x ");
+    }
+    PRINTBLANKLINE;
+  }
+
+  PRINTBLANKLINE;
+}
+
 void* client_matrix_thread(void* thread_args){
   //printf("\n CLIENT MATRIX THREAD\n");
+  int rcvd_matrix[ROW][COL];
+  int bytesread = 0;
+  
   while(true){
+    bytesread = read(client_sockfd, rcvd_matrix, MATRIXSIZE);
+    if(bytesread == 0)
+      continue;
+    else if(bytesread == MATRIXSIZE){
+      //print_matrix_client((int**) rcvd_matrix);
+      int i,j;
+      for(i=0 ; i<ROW ; i++){
+        PRINTTAB;
+        for(j=0 ; j<COL ; j++){
+          if(rcvd_matrix[i][j] == OFF)
+        printf(". ");
+      else
+        printf("x ");
+    }
+    PRINTBLANKLINE;
+  }
+
+    }
    
   }
 }
@@ -50,19 +93,18 @@ void* client_matrix_thread(void* thread_args){
 void send_command_srv(int client_socket, const char* command){
   int comm_len = strlen(command) + 1;
   write(client_socket, &comm_len, sizeof(comm_len)); /* send length */
-  write(client_socket, &command, comm_len);
+  write(client_socket, command, comm_len);
 }
 
 void start_client(){
   /*
-   - create matrix print thread
-   - main thread - create socket and connect to server
-   - main thread - create a loop to accept user input and send to server
-   - matrix thread - wait for data from server and print
-   */
+    - create matrix print thread
+    - main thread - create socket and connect to server
+    - main thread - create a loop to accept user input and send to server
+    - matrix thread - wait for data from server and print
+  */
 
   char command[COMMANDSIZE];
-  int client_sockfd;
   
   pthread_t matrixcthread_id;
   pthread_create(&matrixcthread_id, NULL, &client_matrix_thread, NULL);
@@ -78,18 +120,55 @@ void start_client(){
   
 }
 
+void send_to_client(){
+  write(client_sockfd_srv, matrix_srv, MATRIXSIZE);
+}
 
+void calc_matrix(const char* command){
 
-
-
+  switch(command[0]){
+  case '.': send_to_client();
+    break;
+  case 'n':
+  case 'i':
+  case 'r':
+  case 'o':
+  case 's':
+  case 'g':
+  case 't':
+    break;
+  default:
+    break;
+      
+  }
+}
 
 void* server_matrix_thread(void* thread_args){
   printf("\n SERVER MATRIX THREAD\n");
+  char clncommcpy[COMMANDSIZE];
 
+  init_matrix();
+  print_matrix_srv();
+  
   while(true){
+    pthread_mutex_lock(&clncomm_mutex);
+    strcpy(clncommcpy, (const char*) clncomm);
+    pthread_mutex_unlock(&clncomm_mutex);
+
+    if(clncommcpy[0] == 'h')
+      continue;
+    else if(clncommcpy[0] == 'q')
+      close(client_sockfd_srv);
+    else if(clncommcpy[0] == 'k')
+      exit(0);
+    else
+      calc_matrix(clncommcpy);
+    
+  
     
   }
 }
+
 
 
 int connect_to_client(){
@@ -119,23 +198,27 @@ void read_client_command(int client_sockfd_srv, char* command){
   
   while(true){
     
-    if(read(client_sockfd_srv, &len, sizeof(len)) == 0){
-      printf("read len ");
+    if(read(client_sockfd_srv, &len, sizeof(len)) == 0)
       return;
-    }
-    if(len !=0) printf("len = %d\n",len);
+    
     comm = (char*) malloc(len);
     
     read(client_sockfd_srv, comm, len);
+    if(len !=0){
+      printf("Server received len = %d command = %s\n",len,comm);
+      pthread_mutex_lock(&clncomm_mutex);
+      strcpy(clncomm,comm);
+      pthread_mutex_unlock(&clncomm_mutex);      
+    }
+
+    free(comm);
+    len=0;
   }
-  printf("\n SERVER received %s\n", comm);
-  free(comm);
 }
 
 
 void start_server(){
   printf("\n SERVER \n");
-  int client_sockfd_srv;
   char command[COMMANDSIZE];
   
 
@@ -143,7 +226,7 @@ void start_server(){
     - create matrix calc thread
     - main thread - default shared data-struct create socket, bind, listen, read
     - matrix thread - read shared data-struct, change shared ds, calc, write to socket
-   */
+  */
 
   pthread_t matrixsthread_id;
   pthread_create(&matrixsthread_id, NULL, &server_matrix_thread, NULL);
@@ -151,9 +234,9 @@ void start_server(){
   client_sockfd_srv = connect_to_client();
   
   //while(true){
-    read_client_command(client_sockfd_srv, command);
+  read_client_command(client_sockfd_srv, command);
     
-    //}
+  //}
 }
 
 
@@ -161,14 +244,14 @@ void start_server(){
 
 int main(int argc, char* argv[]){
   /*
-   - create client or server based on args
+    - create client or server based on args
     1) Create 1 thread for calculating matrix.
-  2) Start a socket server in main thread after creating matrix calculating thread and set comand variable to NOP
-  3) Wait for connection from client
-  4) main server thread set global command variable to command received from client
-  5) matrix thread in infinite loop 
-  5.1) Check command - skip task for NOP
-  5.2) Do work for other non-NOP commands (set to NOP the global command variable if required)
+    2) Start a socket server in main thread after creating matrix calculating thread and set comand variable to NOP
+    3) Wait for connection from client
+    4) main server thread set global command variable to command received from client
+    5) matrix thread in infinite loop 
+    5.1) Check command - skip task for NOP
+    5.2) Do work for other non-NOP commands (set to NOP the global command variable if required)
   */
 
   (void) argc; /* shuts down compiler warning about unused argc */

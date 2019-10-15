@@ -6,9 +6,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin)
 include_directories(${CMAKE_BINARY_DIR}/../include)
 add_executable(gol ${CMAKE_BINARY_DIR}/../src/gol.c)
 
-add_executable(gol-server ${CMAKE_BINARY_DIR}/../src/gol-clientserver.c)
+add_executable(gol-server ${CMAKE_BINARY_DIR}/../src/gol-clientserver.c ${CMAKE_BINARY_DIR}/../src/gol-server-matrix.c)
 target_link_libraries(gol-server pthread)
 
-add_executable(gol-client ${CMAKE_BINARY_DIR}/../src/gol-clientserver.c)
+add_executable(gol-client ${CMAKE_BINARY_DIR}/../src/gol-clientserver.c ${CMAKE_BINARY_DIR}/../src/gol-server-matrix.c)
 target_link_libraries(gol-client pthread)
 
