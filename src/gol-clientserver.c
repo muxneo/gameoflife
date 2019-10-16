@@ -8,6 +8,7 @@
 #include "gol-clientserver-matrix.h"
 
 extern int matrix_srv[ROW][COL];
+extern mat_ptr2d matrix_srv_ptr;
 
 
 int toadmat[8][8] = {
@@ -46,6 +47,11 @@ int blinkermat[8][8] = {
 };
 
 
+mat_ptr2d toadmat_ptr;
+mat_ptr2d beaconmat_ptr;
+mat_ptr2d blinkermat_ptr;
+bool STOPSENDING=false;
+
 
 void print_help(){
   printf("\n");
@@ -71,57 +77,29 @@ int connect_to_server(){
   struct sockaddr_un clntsockinfo;
 
   /* create socket */
-  client_sock_fd =  socket(PF_LOCAL,SOCK_STREAM,0);
+  client_sock_fd =  socket(PF_LOCAL,SOCK_STREAM|SOCK_NONBLOCK,0);
 
   clntsockinfo.sun_family = PF_LOCAL;
   strcpy(clntsockinfo.sun_path,GOLSOCKET);
-  connect(client_sock_fd, (struct sockaddr*) &clntsockinfo, SUN_LEN(&clntsockinfo));
 
+  while((-1) == connect(client_sock_fd, (struct sockaddr*) &clntsockinfo, SUN_LEN(&clntsockinfo)) ){}
+  printf("Hurray! connected to Server\n");
+  
   return client_sock_fd;
 }
 
-void print_matrix_client(int** rcvd_matrix){
-  int i,j;
-
-  PRINTBLANKLINE;
-  
-  for(i=0 ; i<ROW ; i++){
-    PRINTTAB;
-    for(j=0 ; j<COL ; j++){
-      if(rcvd_matrix[i][j] == OFF)
-        printf(". ");
-      else
-        printf("x ");
-    }
-    PRINTBLANKLINE;
-  }
-
-  PRINTBLANKLINE;
-}
 
 void* client_matrix_thread(void* thread_args){
   //printf("\n CLIENT MATRIX THREAD\n");
   int rcvd_matrix[ROW][COL];
   int bytesread = 0;
-  
+
   while(true){
     bytesread = read(client_sockfd, rcvd_matrix, MATRIXSIZE); /* get matrix from server */
-    if(bytesread == 0)
-      continue;
+    if(bytesread < 1)
+      continue;    
     else if(bytesread == MATRIXSIZE){
-      //print_matrix_client((int**) rcvd_matrix);
-      int i,j;
-      for(i=0 ; i<ROW ; i++){
-        PRINTTAB;
-        for(j=0 ; j<COL ; j++){
-          if(rcvd_matrix[i][j] == OFF)
-        printf(". ");
-      else
-        printf("x ");
-    }
-    PRINTBLANKLINE;
-  }
-
+      print_matrix_srv((int**) rcvd_matrix);      
     }
    
   }
@@ -141,7 +119,7 @@ void start_client(){
     - matrix thread - wait for data from server and print
   */
 
-  char command[COMMANDSIZE];
+  char command[COMMANDSIZE] = {'\0'};
   
   pthread_t matrixcthread_id;
   pthread_create(&matrixcthread_id, NULL, &client_matrix_thread, NULL);
@@ -152,36 +130,86 @@ void start_client(){
   
   while(true){
     scanf("%s",command);
-    send_command_srv(client_sockfd, command);
-  }
-  
+
+   switch(command[0]){
+    case 'h':
+      print_help();
+      break;
+    case 'q': 
+    case 'k':
+      send_command_srv(client_sockfd,command);
+      unlink(GOLSOCKET);
+      exit(0);
+      break;
+   case 't':
+     send_command_srv(client_sockfd,command);
+     break;
+    default:
+      send_command_srv(client_sockfd, command);      
+    } 
+  }  
 }
 
 void server_send_client(Count reps, Mattype matrix_type){
- 
-  while(true){
+  //char** mat_to_send;
+
+  switch(matrix_type){
+  case DEFAULTMAT :
+    break;
+  case TOAD :
+    matrix_srv_ptr = toadmat_ptr;
+    break;
+  case BEACON :
+    matrix_srv_ptr = beaconmat_ptr;
+    break;
+  case BLINKER :
+    matrix_srv_ptr = blinkermat_ptr;
+    break;
+  case RANDOM :
+    init_matrix();
+    break;
+  default:
+    break;
+  }
+  
+  while(!STOPSENDING){
     if(reps == STOP)
       return;
-    printf("sending to client\n");
-    write(client_sockfd_srv, matrix_srv, MATRIXSIZE);
+    
+    write(client_sockfd_srv, matrix_srv_ptr, MATRIXSIZE);
 
     if(reps == ONCE)
       return;
+    get_nextgen_matrix();
+    sleep(1);
   }
 }
 
 void server_calc_matrix(char* command){
-
+  
+  STOPSENDING = false;
+  
   switch(command[0]){
-  case '.': server_send_client(ONCE, DEFAULTMAT);
+  case '.':
+    server_send_client(ONCE, DEFAULTMAT);
     break;
   case 'n':
+    server_send_client(ONCE, BEACON);
+    break;
   case 'i':
+    server_send_client(ONCE, BLINKER);
+    break;
   case 'r':
+    server_send_client(ONCE, RANDOM);
+    break;
   case 'o':
+    server_send_client(ONCE, TOAD);
+    break;
   case 's':
   case 'g':
+    server_send_client(INFINITY, DEFAULTMAT);
   case 't':
+    STOPSENDING = true;
     break;
   default:
     break;
@@ -193,27 +221,32 @@ void server_calc_matrix(char* command){
 
 void* server_matrix_thread(void* thread_args){
   printf("\n SERVER MATRIX THREAD\n");
-  //char clncommcpy[COMMANDSIZE];
+  char clncommcpy[COMMANDSIZE] = {'\0'};
 
+  toadmat_ptr = toadmat;
+  beaconmat_ptr = beaconmat;
+  blinkermat_ptr = blinkermat;
+  
   init_matrix();
-  print_matrix_srv();
+  print_matrix_srv(matrix_srv);
   
   while(true){
     pthread_mutex_lock(&clncomm_mutex);
-    //strcpy(clncommcpy, (const char*) clncomm);
-    
-
-    if(clncomm[0] == 'h')
-      continue;
-    else if(clncomm[0] == 'q')
-      close(client_sockfd_srv);
-    else if(clncomm[0] == 'k')
-      exit(0);
-    else
-      server_calc_matrix(clncomm);
-    
+    strcpy(clncommcpy, (const char*) clncomm);
     clncomm[0] = '\0';
     pthread_mutex_unlock(&clncomm_mutex);
+
+    switch(clncommcpy[0]){
+    case 'q' : close(client_sockfd_srv);
+      break;
+    case 'k' :
+      unlink(GOLSOCKET);
+      exit(0);
+      break;
+    default : server_calc_matrix(clncommcpy);
+    }
+
+    clncommcpy[0] = '\0';
   }
 }
 
@@ -248,18 +281,19 @@ void read_client_command(int client_sockfd_srv, char* command){
   while(true){
 
     bytesread = read(client_sockfd_srv, &len, sizeof(len));
-    if(bytesread == 0)
-      return;
+    if(bytesread < 1)
+      continue;
     
     comm = (char*) malloc(len);
     
     read(client_sockfd_srv, comm, len);
-
-    if(bytesread != 0){
-      printf("Server received len = %d command = %s\n",len,comm);
+    if(bytesread > 0){
       pthread_mutex_lock(&clncomm_mutex);
       strcpy(clncomm,comm);
-      pthread_mutex_unlock(&clncomm_mutex);      
+      pthread_mutex_unlock(&clncomm_mutex);
+
+      if(comm[0] == 't')
+        STOPSENDING = true;
     }
 
     free(comm);

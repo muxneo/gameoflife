@@ -29,7 +29,7 @@ void init_matrix(){
 }
 
 
-void print_matrix_srv(){
+void print_matrix_srv(int matrix[][COL]){
   int i,j;
 
   PRINTBLANKLINE;
@@ -37,12 +37,15 @@ void print_matrix_srv(){
   for(i=0 ; i<ROW ; i++){
     PRINTTAB;
     for(j=0 ; j<COL ; j++){
-      PRINTCELL(i,j);
-    }
-    PRINTBLANKLINE;
-  }
-
+      if(matrix[i][j] == OFF)
+        printf(". ");
+      else
+        printf("x ");
+        }
   PRINTBLANKLINE;
+}
+
+PRINTBLANKLINE;
 }
 
 

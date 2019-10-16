@@ -18,11 +18,12 @@
 #include <stdlib.h> /* malloc */
 
 
+
 #define GOLSOCKET "/tmp/golsocket"
 #define COMMANDSIZE 20
 #define MATRIXSIZE 256
 
-typedef enum {DEFAULTMAT, TOAD, BEACON, BLINKER} Mattype;
+typedef enum {DEFAULTMAT, TOAD, BEACON, BLINKER,RANDOM} Mattype;
 typedef enum {STOP=0, ONCE=1,INFINITY} Count;
 
 

@@ -24,7 +24,7 @@ typedef int (*mat_ptr2d)[COL];
 
 #define PRINTTAB printf("    ");
 
-#define PRINTCELL(i,j) {\
+#define PRINTCELL(i,j) {                       \
   if(matrix_ptr[i][j] == OFF)\
     printf(". ");\
   else\
