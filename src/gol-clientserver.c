@@ -10,6 +10,43 @@
 extern int matrix_srv[ROW][COL];
 
 
+int toadmat[8][8] = {
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,1,0,0,0,0},
+  {0,0,0,1,1,0,0,0},
+  {0,0,0,1,1,0,0,0},
+  {0,0,0,0,1,0,0,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
+};
+
+
+int beaconmat[8][8] = {
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,1,1,0,0,0,0},
+  {0,0,1,1,0,0,0,0},
+  {0,0,0,0,1,1,0,0},
+  {0,0,0,0,1,1,0,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
+};
+
+
+int blinkermat[8][8] = {
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,1,0,0,0,0},
+  {0,0,0,1,0,0,0,0},
+  {0,0,0,1,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0},
+};
+
+
+
 void print_help(){
   printf("\n");
   printf("Client usage:\n");
@@ -68,7 +105,7 @@ void* client_matrix_thread(void* thread_args){
   int bytesread = 0;
   
   while(true){
-    bytesread = read(client_sockfd, rcvd_matrix, MATRIXSIZE);
+    bytesread = read(client_sockfd, rcvd_matrix, MATRIXSIZE); /* get matrix from server */
     if(bytesread == 0)
       continue;
     else if(bytesread == MATRIXSIZE){
@@ -120,14 +157,23 @@ void start_client(){
   
 }
 
-void send_to_client(){
-  write(client_sockfd_srv, matrix_srv, MATRIXSIZE);
+void server_send_client(Count reps, Mattype matrix_type){
+ 
+  while(true){
+    if(reps == STOP)
+      return;
+    printf("sending to client\n");
+    write(client_sockfd_srv, matrix_srv, MATRIXSIZE);
+
+    if(reps == ONCE)
+      return;
+  }
 }
 
-void calc_matrix(const char* command){
+void server_calc_matrix(char* command){
 
   switch(command[0]){
-  case '.': send_to_client();
+  case '.': server_send_client(ONCE, DEFAULTMAT);
     break;
   case 'n':
   case 'i':
@@ -141,31 +187,33 @@ void calc_matrix(const char* command){
     break;
       
   }
+
+  command[0] = '\0';
 }
 
 void* server_matrix_thread(void* thread_args){
   printf("\n SERVER MATRIX THREAD\n");
-  char clncommcpy[COMMANDSIZE];
+  //char clncommcpy[COMMANDSIZE];
 
   init_matrix();
   print_matrix_srv();
   
   while(true){
     pthread_mutex_lock(&clncomm_mutex);
-    strcpy(clncommcpy, (const char*) clncomm);
-    pthread_mutex_unlock(&clncomm_mutex);
+    //strcpy(clncommcpy, (const char*) clncomm);
+    
 
-    if(clncommcpy[0] == 'h')
+    if(clncomm[0] == 'h')
       continue;
-    else if(clncommcpy[0] == 'q')
+    else if(clncomm[0] == 'q')
       close(client_sockfd_srv);
-    else if(clncommcpy[0] == 'k')
+    else if(clncomm[0] == 'k')
       exit(0);
     else
-      calc_matrix(clncommcpy);
+      server_calc_matrix(clncomm);
     
-  
-    
+    clncomm[0] = '\0';
+    pthread_mutex_unlock(&clncomm_mutex);
   }
 }
 
@@ -195,16 +243,19 @@ int connect_to_client(){
 void read_client_command(int client_sockfd_srv, char* command){
   int len = 0;
   char* comm;
+  int bytesread = 0;
   
   while(true){
-    
-    if(read(client_sockfd_srv, &len, sizeof(len)) == 0)
+
+    bytesread = read(client_sockfd_srv, &len, sizeof(len));
+    if(bytesread == 0)
       return;
     
     comm = (char*) malloc(len);
     
     read(client_sockfd_srv, comm, len);
-    if(len !=0){
+
+    if(bytesread != 0){
       printf("Server received len = %d command = %s\n",len,comm);
       pthread_mutex_lock(&clncomm_mutex);
       strcpy(clncomm,comm);

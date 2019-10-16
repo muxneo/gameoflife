@@ -22,6 +22,10 @@
 #define COMMANDSIZE 20
 #define MATRIXSIZE 256
 
+typedef enum {DEFAULTMAT, TOAD, BEACON, BLINKER} Mattype;
+typedef enum {STOP=0, ONCE=1,INFINITY} Count;
+
+
 /* Shared data between client threads - start */
 int gen = 0;
 int client_sockfd;
@@ -29,21 +33,21 @@ int client_sockfd;
 
 
 /* Shared data between server threads - start */
-char clncomm[COMMANDSIZE];
+char clncomm[COMMANDSIZE] = {'\0'};
 pthread_mutex_t clncomm_mutex = PTHREAD_MUTEX_INITIALIZER;
 int client_sockfd_srv;
 /* Shared data between server threads - end   */
 
 
 /**
-@brief send_to_client send data back to client 
+@brief server_send_client send data back to client 
 */
-void send_to_client();
+void server_send_client(Count reps , Mattype matrix_type);
 
 /**
-@brief calc_matrix calculate matrix to send back to client
+@brief server_calc_matrix calculate matrix to send back to client
 */
-void calc_matrix(const char* command);
+void server_calc_matrix(char* command);
 
 
 /**

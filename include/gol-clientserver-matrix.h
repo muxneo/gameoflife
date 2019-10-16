@@ -38,8 +38,6 @@ typedef int (*mat_ptr2d)[COL];
 #define RIGHTBOUND(x) (x >= COL)
 #define BOTTOMBOUND(x) (x >= ROW)
 
-
-
 /**
 @brief init_matrix Initialize matrix with random values 
 */
