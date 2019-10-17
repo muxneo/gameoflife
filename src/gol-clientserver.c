@@ -7,6 +7,7 @@
 #include "gol-clientserver.h"
 #include "gol-clientserver-matrix.h"
 
+
 extern int matrix_srv[ROW][COL];
 extern mat_ptr2d matrix_srv_ptr;
 
@@ -69,21 +70,25 @@ void print_help(){
   printf(" q  - Quit and disconnect from server(Leaving it running)\n");
   printf(" k  - Quit and kill server\n\n");
   //  printf(" Client is connected to port %d",port);
-  printf(" %d>",gen);
+  printf("%d>\n  ",gen);
+
 }
 
 int connect_to_server(){
   int client_sock_fd;
   struct sockaddr_un clntsockinfo;
+  int connectret;
 
   /* create socket */
-  client_sock_fd =  socket(PF_LOCAL,SOCK_STREAM|SOCK_NONBLOCK,0);
+  client_sock_fd =  socket(PF_LOCAL,SOCK_STREAM,0);
 
   clntsockinfo.sun_family = PF_LOCAL;
+  while(access(GOLSOCKET, F_OK ) == -1){}
+
   strcpy(clntsockinfo.sun_path,GOLSOCKET);
 
-  while((-1) == connect(client_sock_fd, (struct sockaddr*) &clntsockinfo, SUN_LEN(&clntsockinfo)) ){}
-  printf("Hurray! connected to Server\n");
+  connectret = connect(client_sock_fd, (struct sockaddr*) &clntsockinfo, SUN_LEN(&clntsockinfo));
+  printf("Hurray! connected to Server - connectret = %d - errno = %s - errno = %d \n",connectret,strerror(errno),errno);
   
   return client_sock_fd;
 }
@@ -91,16 +96,21 @@ int connect_to_server(){
 
 void* client_matrix_thread(void* thread_args){
   //printf("\n CLIENT MATRIX THREAD\n");
+  int rcvd_gen = 0;
   int rcvd_matrix[ROW][COL];
-  int bytesread = 0;
+  int bytesreadgen = 0;
+  int bytesreadmatrix = 0;
 
   while(true){
-    bytesread = read(client_sockfd, rcvd_matrix, MATRIXSIZE); /* get matrix from server */
-    if(bytesread < 1)
+    bytesreadgen = read(client_sockfd,&rcvd_gen,sizeof(rcvd_gen));
+    bytesreadmatrix = read(client_sockfd, rcvd_matrix, MATRIXSIZE); /* get matrix from server */
+    if(bytesreadmatrix < 1)
       continue;    
-    else if(bytesread == MATRIXSIZE){
-      print_matrix_srv((int**) rcvd_matrix);      
+    else if(bytesreadmatrix == MATRIXSIZE){
+      print_matrix_srv((int**) rcvd_matrix);
+      printf("%d> ",rcvd_gen);
     }
+    gen = rcvd_gen;
    
   }
 }
@@ -131,7 +141,7 @@ void start_client(){
   while(true){
     scanf("%s",command);
 
-   switch(command[0]){
+    switch(command[0]){
     case 'h':
       print_help();
       break;
@@ -141,9 +151,9 @@ void start_client(){
       unlink(GOLSOCKET);
       exit(0);
       break;
-   case 't':
-     send_command_srv(client_sockfd,command);
-     break;
+    case 't':
+      send_command_srv(client_sockfd,command);
+      break;
     default:
       send_command_srv(client_sockfd, command);      
     } 
@@ -175,14 +185,30 @@ void server_send_client(Count reps, Mattype matrix_type){
   while(!STOPSENDING){
     if(reps == STOP)
       return;
-    
+    write(client_sockfd_srv,&gensrv,sizeof(gensrv));
     write(client_sockfd_srv, matrix_srv_ptr, MATRIXSIZE);
 
     if(reps == ONCE)
       return;
     get_nextgen_matrix();
+    gensrv++;
     sleep(1);
   }
+}
+
+void flip_cells(char* command){
+  int row, col;
+  row = command[0] - '0';
+  
+  if(command[1] >= 'A' && command[1] <= 'Z')
+    col = command[1] - 'A';
+  else
+    col = command[1] - 'a';
+  
+  if(matrix_srv_ptr[row][col] == 1)
+    matrix_srv_ptr[row][col] = 0;
+  else
+    matrix_srv_ptr[row][col] = 1;
 }
 
 void server_calc_matrix(char* command){
@@ -206,14 +232,26 @@ void server_calc_matrix(char* command){
     server_send_client(ONCE, TOAD);
     break;
   case 's':
+    server_send_client(ONCE, DEFAULTMAT);
+    break;
   case 'g':
     server_send_client(INFINITY, DEFAULTMAT);
   case 't':
     STOPSENDING = true;
     break;
+  case '0' :
+  case '1' :
+  case '2' :
+  case '3' :
+  case '4' :
+  case '5' :
+  case '6' :
+  case '7' :
+    flip_cells(command);
+    server_send_client(ONCE,DEFAULTMAT);    
+    break;
   default:
     break;
-      
   }
 
   command[0] = '\0';

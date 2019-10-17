@@ -16,7 +16,7 @@
 #include <sys/un.h>
 #include <unistd.h> /* read, write functions */
 #include <stdlib.h> /* malloc */
-
+#include <errno.h>
 
 
 #define GOLSOCKET "/tmp/golsocket"
@@ -32,13 +32,18 @@ int gen = 0;
 int client_sockfd;
 /* Shared data between client threads - end   */
 
-
+int gensrv = 0;
 /* Shared data between server threads - start */
 char clncomm[COMMANDSIZE] = {'\0'};
 pthread_mutex_t clncomm_mutex = PTHREAD_MUTEX_INITIALIZER;
 int client_sockfd_srv;
 /* Shared data between server threads - end   */
 
+
+/**
+@brief flip_cells flip cell at particular row and column
+*/
+void flip_cells(char* comman);
 
 /**
 @brief server_send_client send data back to client 
