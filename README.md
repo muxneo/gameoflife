@@ -8,3 +8,14 @@ Stand-Alone GOL implementation
 4) Run make
 5) cd ../bin
 6) ./gol
+
+Client-Server GOL implementation
+7) In one terminal run ./gol-server (run the server first)
+8) Start another terminal and run ./gol-client
+
+
+Limitations:
+- Some features are missing
+- server needs to be started first
+- After client is quit using 'q' server needs to be restarted.
+
