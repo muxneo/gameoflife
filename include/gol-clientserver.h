@@ -102,6 +102,6 @@ int connect_to_client();
 /**
 @brief read_client_command read command sent by client
 */
-void read_client_command(int client_sockfd_srv, char* command);
+void read_client_command(int client_sockfd_srv);
 
 #endif /*_GOL_CLIENTSERVER_HEADER_*/
