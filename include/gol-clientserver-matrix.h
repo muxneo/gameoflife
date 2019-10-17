@@ -4,13 +4,13 @@
  * @brief Game Of Life header file
  */
 
-#ifndef _GOL_HEADER_
-#define _GOL_HEADER_
+#ifndef _GOL_CLIENTSERVER_MATRIX_HEADER_
+#define _GOL_CLIENTSERVER_MATRIX_HEADER_
 
 #include <stdio.h>
 #include <time.h>
-#include <stdlib.h> /* srand, rand */
-#include <stdbool.h> /* gets bool */
+#include <stdbool.h>
+#include <stdlib.h>
 
 #define ROW 8
 #define COL 8
@@ -24,8 +24,8 @@ typedef int (*mat_ptr2d)[COL];
 
 #define PRINTTAB printf("    ");
 
-#define PRINTCELL(i,j) {                       \
-  if(matrix_ptr[i][j] == OFF)\
+#define PRINTCELL(i,j,matrix) {                       \
+  if(matrix[i][j] == OFF)\
     printf(". ");\
   else\
     printf("x ");\
@@ -33,34 +33,20 @@ typedef int (*mat_ptr2d)[COL];
 
 #define PRINTBLANKLINE printf("\n");
 
-
-
 #define LEFTBOUND(x) (x == -1)
 #define TOPBOUND(x) (x == -1)
 #define RIGHTBOUND(x) (x >= COL)
 #define BOTTOMBOUND(x) (x >= ROW)
-  
-
 
 /**
-@brief Program init 
-*/
-void init();
-
-/**
-@brief Initialize matrix with random values 
+@brief init_matrix Initialize matrix with random values 
 */
 void init_matrix();
 
 /**
-@brief Print the whole matrix 
+@brief print_matrix_srv Print the whole matrix on server side 
 */
-void print_matrix();
-
-/**
-@brief starts the main program loop
-*/
-void start_gol();
+void print_matrix_srv();
 
 /**
 @brief Readies matrix to be printed in next generation
@@ -82,4 +68,6 @@ int apply_gol_rules(int on_neighbors, bool mystate);
 */
 void swap_matrix(mat_ptr2d *matrix, mat_ptr2d *temp_matrix);
 
-#endif /*_GOL_HEADER_*/
+
+#endif /*_GOL_CLIENTSERVER_MATRIX_HEADER_*/
+
