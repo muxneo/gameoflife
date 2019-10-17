@@ -19,4 +19,5 @@ Limitations:
 - Some features are missing
 - server needs to be started first
 - After client is quit using 'q' server needs to be restarted.
+- Sometimes /tmp/golsocket may not get deleted after quitting. If client-server do not connect, exit both client and server and delete /tmp/golsocket, start server first and then start client.
 
