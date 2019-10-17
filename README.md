@@ -10,6 +10,7 @@ Stand-Alone GOL implementation
 6) ./gol
 
 Client-Server GOL implementation
+
 7) In one terminal run ./gol-server (run the server first)
 8) Start another terminal and run ./gol-client
 
